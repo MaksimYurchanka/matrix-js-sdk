@@ -1,0 +1,309 @@
+// MYLIFEDATA MATRIX WEB SERVICE
+// File: web-service/server.ts
+
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 10000;
+
+// Security and middleware
+app.use(helmet());
+app.use(cors({
+  origin: [
+    'https://mylifedata-uhmf.onrender.com', // Main API
+    'https://mylifedata.vercel.app',        // Frontend (когда будет готов)
+    'http://localhost:3000',                // Development
+    'http://localhost:5173',                // Vite dev
+    'http://localhost:10000'                // Local API
+  ]
+}));
+app.use(express.json());
+
+// Matrix Service Class (будем развивать поэтапно)
+class MyLifeDataMatrixService {
+  private isInitialized = false;
+  private demoMode = true;
+
+  async initialize() {
+    try {
+      // Phase 1: Basic service without Matrix SDK (для immediate deployment)
+      console.log('🔧 MyLifeData Matrix Service initializing...');
+      
+      const homeserverUrl = process.env.MATRIX_HOMESERVER_URL || 'https://matrix.org';
+      const accessToken = process.env.MATRIX_ACCESS_TOKEN;
+      const userId = process.env.MATRIX_USER_ID;
+
+      if (!accessToken || !userId) {
+        console.log('⚠️ Matrix credentials not provided - running in demo mode');
+        this.demoMode = true;
+        this.isInitialized = true;
+        return true;
+      }
+
+      // TODO: Phase 2 - Add actual Matrix JS SDK integration
+      // import { createClient } from 'matrix-js-sdk';
+      // this.client = createClient({ ... });
+
+      console.log('✅ Matrix Service initialized successfully');
+      console.log(`🏠 Homeserver: ${homeserverUrl}`);
+      console.log(`👤 User: ${userId}`);
+      console.log(`📋 Mode: ${this.demoMode ? 'Demo' : 'Live'}`);
+      
+      this.isInitialized = true;
+      return true;
+    } catch (error) {
+      console.error('❌ Matrix initialization failed:', error);
+      this.demoMode = true;
+      this.isInitialized = true;
+      return false;
+    }
+  }
+
+  // Demo data generation for immediate deployment
+  generateDemoAnalysis(roomId?: string) {
+    const baseScore = 50 + Math.random() * 40; // 50-90 range
+    
+    return {
+      totalMessages: Math.floor(Math.random() * 500) + 50,
+      timeRange: {
+        start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+        end: new Date().toISOString(),
+        duration: 30 * 24 * 60 * 60 * 1000
+      },
+      participants: {
+        count: Math.floor(Math.random() * 5) + 2,
+        users: ['@user1:matrix.org', '@user2:matrix.org', '@swiss_professional:matrix.org']
+      },
+      averageMessageLength: Math.floor(Math.random() * 50) + 20,
+      communicationFrequency: Math.random() * 10 + 1,
+      sentimentScore: baseScore,
+      responseMetrics: {
+        averageResponseTime: Math.random() * 24 * 60 * 60 * 1000, // milliseconds
+        averageResponseTimeHours: Math.random() * 24,
+        totalResponses: Math.floor(Math.random() * 100) + 10,
+        fastestResponse: Math.random() * 60 * 60 * 1000, // 1 hour max
+        slowestResponse: Math.random() * 7 * 24 * 60 * 60 * 1000 // 7 days max
+      }
+    };
+  }
+
+  async analyzeRoomCommunication(roomId: string) {
+    if (this.demoMode) {
+      console.log(`📊 Analyzing room ${roomId} in demo mode`);
+      return this.generateDemoAnalysis(roomId);
+    }
+
+    // TODO: Real Matrix analysis when SDK integrated
+    throw new Error('Live Matrix analysis not yet implemented');
+  }
+
+  getConnectionStatus() {
+    return {
+      connected: this.isInitialized,
+      mode: this.demoMode ? 'demo' : 'live',
+      matrixSDK: 'pending_integration',
+      timestamp: new Date().toISOString()
+    };
+  }
+}
+
+// Initialize Matrix Service
+const matrixService = new MyLifeDataMatrixService();
+
+// =============================================================================
+// API ENDPOINTS
+// =============================================================================
+
+// Health check
+app.get('/health', (req, res) => {
+  const status = matrixService.getConnectionStatus();
+  res.json({
+    service: 'MyLifeData Matrix Service',
+    status: 'operational',
+    matrix: status,
+    timestamp: new Date().toISOString(),
+    version: '1.0.0',
+    endpoints: [
+      'GET /health',
+      'GET /status', 
+      'POST /analyze/room',
+      'POST /swiss-network/analyze'
+    ]
+  });
+});
+
+// Connection status
+app.get('/status', (req, res) => {
+  res.json({
+    ...matrixService.getConnectionStatus(),
+    environment: {
+      port: PORT,
+      nodeEnv: process.env.NODE_ENV || 'development',
+      matrixHomeserver: process.env.MATRIX_HOMESERVER_URL || 'not_configured',
+      hasAccessToken: !!process.env.MATRIX_ACCESS_TOKEN
+    }
+  });
+});
+
+// Analyze single room
+app.post('/analyze/room', async (req, res) => {
+  try {
+    const { roomId } = req.body;
+    
+    if (!roomId) {
+      return res.status(400).json({
+        success: false,
+        error: 'roomId is required'
+      });
+    }
+    
+    const analysis = await matrixService.analyzeRoomCommunication(roomId);
+    
+    res.json({
+      success: true,
+      roomId,
+      analysis,
+      timestamp: new Date().toISOString(),
+      mode: matrixService.getConnectionStatus().mode
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Analysis failed'
+    });
+  }
+});
+
+// Swiss Network Communication Intelligence
+app.post('/swiss-network/analyze', async (req, res) => {
+  try {
+    const { userId, roomIds = [], timeRange = '30d' } = req.body;
+    
+    console.log(`🇨🇭 Swiss network analysis for user ${userId}, ${roomIds.length} rooms`);
+    
+    const results = [];
+    
+    // Analyze each room (demo mode)
+    for (const roomId of roomIds) {
+      const analysis = await matrixService.analyzeRoomCommunication(roomId);
+      results.push({
+        roomId,
+        analysis
+      });
+    }
+    
+    // Swiss network insights calculation
+    const totalMessages = results.reduce((sum, r) => sum + r.analysis.totalMessages, 0);
+    const avgSentiment = results.length > 0 
+      ? results.reduce((sum, r) => sum + r.analysis.sentimentScore, 0) / results.length
+      : 50;
+    const avgResponseTime = results.length > 0
+      ? results.reduce((sum, r) => sum + (r.analysis.responseMetrics?.averageResponseTimeHours || 0), 0) / results.length
+      : 12;
+
+    const swissNetworkInsights = {
+      totalRoomsAnalyzed: results.length,
+      overallCommunicationScore: Math.round(avgSentiment),
+      totalMessages,
+      averageResponseTime: Math.round(avgResponseTime * 100) / 100,
+      recommendations: this.generateSwissRecommendations(avgSentiment, avgResponseTime, totalMessages),
+      professionalismScore: this.calculateProfessionalismScore(avgSentiment, avgResponseTime),
+      networkEngagementScore: Math.min(100, Math.round((totalMessages / 100) * 100))
+    };
+    
+    res.json({
+      success: true,
+      userId,
+      timeRange,
+      swissNetworkInsights,
+      detailed: results.slice(0, 5), // Limit detailed results
+      timestamp: new Date().toISOString(),
+      mode: matrixService.getConnectionStatus().mode
+    });
+  } catch (error) {
+    console.error('Swiss network analysis error:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Swiss network analysis failed'
+    });
+  }
+});
+
+// Helper functions
+function generateSwissRecommendations(sentiment: number, responseTime: number, totalMessages: number): string[] {
+  const recommendations = [];
+  
+  if (responseTime > 8) {
+    recommendations.push('Improve response times - Swiss business professionals expect replies within 4-6 hours');
+  }
+  
+  if (sentiment < 60) {
+    recommendations.push('Enhance communication positivity - include more appreciation and specific feedback');
+  }
+  
+  if (totalMessages < 100) {
+    recommendations.push('Increase communication frequency - regular touchpoints strengthen Swiss business relationships');
+  }
+  
+  recommendations.push('Maintain punctuality and precision in all communications');
+  recommendations.push('Schedule quarterly relationship reviews with key network contacts');
+  
+  return recommendations;
+}
+
+function calculateProfessionalismScore(sentiment: number, responseTime: number): number {
+  const punctualityScore = Math.max(0, 100 - (responseTime * 8));
+  const communicationScore = sentiment;
+  return Math.round((punctualityScore + communicationScore) / 2);
+}
+
+// Error handling
+app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Service error:', err);
+  res.status(500).json({
+    success: false,
+    error: 'Internal service error',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// 404 handler
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Endpoint not found',
+    availableEndpoints: [
+      'GET /health',
+      'GET /status',
+      'POST /analyze/room',
+      'POST /swiss-network/analyze'
+    ]
+  });
+});
+
+// Start server
+app.listen(PORT, async () => {
+  console.log('🚀 MyLifeData Matrix Service starting...');
+  console.log(`📍 Server running on port ${PORT}`);
+  console.log(`🌐 Health check: http://localhost:${PORT}/health`);
+  console.log(`📊 Status endpoint: http://localhost:${PORT}/status`);
+  
+  // Initialize Matrix service
+  const initialized = await matrixService.initialize();
+  if (initialized) {
+    console.log('✅ Matrix Service ready for Swiss network communication intelligence');
+    console.log('🇨🇭 Demo mode active - providing sample analysis data');
+  } else {
+    console.log('❌ Matrix Service failed to initialize');
+  }
+  
+  console.log('🎯 Service endpoints:');
+  console.log('   POST /analyze/room - Single room analysis');
+  console.log('   POST /swiss-network/analyze - Swiss network intelligence');
+  console.log('💎 Ready for MyLifeData API integration!');
+});
