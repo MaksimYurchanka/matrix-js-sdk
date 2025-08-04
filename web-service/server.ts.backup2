@@ -1,10 +1,10 @@
-// MYLIFEDATA MATRIX WEB SERVICE - PRODUCTION READY
+// MYLIFEDATA MATRIX WEB SERVICE
 // File: web-service/server.ts
 
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const dotenv = require('dotenv');
+import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
@@ -16,7 +16,7 @@ app.use(helmet());
 app.use(cors({
   origin: [
     'https://mylifedata-uhmf.onrender.com', // Main API
-    'https://mylifedata.vercel.app',        // Frontend
+    'https://mylifedata.vercel.app',        // Frontend (когда будет готов)
     'http://localhost:3000',                // Development
     'http://localhost:5173',                // Vite dev
     'http://localhost:10000'                // Local API
@@ -24,15 +24,14 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Matrix Service Class
+// Matrix Service Class (будем развивать поэтапно)
 class MyLifeDataMatrixService {
-  constructor() {
-    this.isInitialized = false;
-    this.demoMode = true;
-  }
+  private isInitialized = false;
+  private demoMode = true;
 
   async initialize() {
     try {
+      // Phase 1: Basic service without Matrix SDK (для immediate deployment)
       console.log('🔧 MyLifeData Matrix Service initializing...');
       
       const homeserverUrl = process.env.MATRIX_HOMESERVER_URL || 'https://matrix.org';
@@ -45,6 +44,10 @@ class MyLifeDataMatrixService {
         this.isInitialized = true;
         return true;
       }
+
+      // TODO: Phase 2 - Add actual Matrix JS SDK integration
+      // import { createClient } from 'matrix-js-sdk';
+      // this.client = createClient({ ... });
 
       console.log('✅ Matrix Service initialized successfully');
       console.log(`🏠 Homeserver: ${homeserverUrl}`);
@@ -61,7 +64,8 @@ class MyLifeDataMatrixService {
     }
   }
 
-  generateDemoAnalysis(roomId) {
+  // Demo data generation for immediate deployment
+  generateDemoAnalysis(roomId?: string) {
     const baseScore = 50 + Math.random() * 40; // 50-90 range
     
     return {
@@ -79,20 +83,22 @@ class MyLifeDataMatrixService {
       communicationFrequency: Math.random() * 10 + 1,
       sentimentScore: baseScore,
       responseMetrics: {
-        averageResponseTime: Math.random() * 24 * 60 * 60 * 1000,
+        averageResponseTime: Math.random() * 24 * 60 * 60 * 1000, // milliseconds
         averageResponseTimeHours: Math.random() * 24,
         totalResponses: Math.floor(Math.random() * 100) + 10,
-        fastestResponse: Math.random() * 60 * 60 * 1000,
-        slowestResponse: Math.random() * 7 * 24 * 60 * 60 * 1000
+        fastestResponse: Math.random() * 60 * 60 * 1000, // 1 hour max
+        slowestResponse: Math.random() * 7 * 24 * 60 * 60 * 1000 // 7 days max
       }
     };
   }
 
-  async analyzeRoomCommunication(roomId) {
+  async analyzeRoomCommunication(roomId: string) {
     if (this.demoMode) {
       console.log(`📊 Analyzing room ${roomId} in demo mode`);
       return this.generateDemoAnalysis(roomId);
     }
+
+    // TODO: Real Matrix analysis when SDK integrated
     throw new Error('Live Matrix analysis not yet implemented');
   }
 
@@ -109,40 +115,12 @@ class MyLifeDataMatrixService {
 // Initialize Matrix Service
 const matrixService = new MyLifeDataMatrixService();
 
-// Helper functions
-function generateSwissRecommendations(sentiment, responseTime, totalMessages) {
-  const recommendations = [];
-  
-  if (responseTime > 8) {
-    recommendations.push('Improve response times - Swiss business professionals expect replies within 4-6 hours');
-  }
-  
-  if (sentiment < 60) {
-    recommendations.push('Enhance communication positivity - include more appreciation and specific feedback');
-  }
-  
-  if (totalMessages < 100) {
-    recommendations.push('Increase communication frequency - regular touchpoints strengthen Swiss business relationships');
-  }
-  
-  recommendations.push('Maintain punctuality and precision in all communications');
-  recommendations.push('Schedule quarterly relationship reviews with key network contacts');
-  
-  return recommendations;
-}
-
-function calculateProfessionalismScore(sentiment, responseTime) {
-  const punctualityScore = Math.max(0, 100 - (responseTime * 8));
-  const communicationScore = sentiment;
-  return Math.round((punctualityScore + communicationScore) / 2);
-}
-
 // =============================================================================
 // API ENDPOINTS
 // =============================================================================
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
   const status = matrixService.getConnectionStatus();
   res.json({
     service: 'MyLifeData Matrix Service',
@@ -160,7 +138,7 @@ app.get('/health', (req, res) => {
 });
 
 // Connection status
-app.get('/status', (req, res) => {
+app.get('/status', (req: Request, res: Response) => {
   res.json({
     ...matrixService.getConnectionStatus(),
     environment: {
@@ -173,7 +151,7 @@ app.get('/status', (req, res) => {
 });
 
 // Analyze single room
-app.post('/analyze/room', async (req, res) => {
+app.post('/analyze/room', async (req: Request, res: Response) => {
   try {
     const { roomId } = req.body;
     
@@ -196,13 +174,13 @@ app.post('/analyze/room', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message || 'Analysis failed'
+      error: error instanceof Error ? error.message : 'Analysis failed'
     });
   }
 });
 
 // Swiss Network Communication Intelligence
-app.post('/swiss-network/analyze', async (req, res) => {
+app.post('/swiss-network/analyze', async (req: Request, res: Response) => {
   try {
     const { userId, roomIds = [], timeRange = '30d' } = req.body;
     
@@ -251,13 +229,41 @@ app.post('/swiss-network/analyze', async (req, res) => {
     console.error('Swiss network analysis error:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Swiss network analysis failed'
+      error: error instanceof Error ? error.message : 'Swiss network analysis failed'
     });
   }
 });
 
+// Helper functions
+function generateSwissRecommendations(sentiment: number, responseTime: number, totalMessages: number): string[] {
+  const recommendations = [];
+  
+  if (responseTime > 8) {
+    recommendations.push('Improve response times - Swiss business professionals expect replies within 4-6 hours');
+  }
+  
+  if (sentiment < 60) {
+    recommendations.push('Enhance communication positivity - include more appreciation and specific feedback');
+  }
+  
+  if (totalMessages < 100) {
+    recommendations.push('Increase communication frequency - regular touchpoints strengthen Swiss business relationships');
+  }
+  
+  recommendations.push('Maintain punctuality and precision in all communications');
+  recommendations.push('Schedule quarterly relationship reviews with key network contacts');
+  
+  return recommendations;
+}
+
+function calculateProfessionalismScore(sentiment: number, responseTime: number): number {
+  const punctualityScore = Math.max(0, 100 - (responseTime * 8));
+  const communicationScore = sentiment;
+  return Math.round((punctualityScore + communicationScore) / 2);
+}
+
 // Error handling
-app.use((err, req, res, next) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('Service error:', err);
   res.status(500).json({
     success: false,
@@ -267,7 +273,7 @@ app.use((err, req, res, next) => {
 });
 
 // 404 handler
-app.use('*', (req, res) => {
+app.use('*', (req: Request, res: Response) => {
   res.status(404).json({
     success: false,
     error: 'Endpoint not found',
