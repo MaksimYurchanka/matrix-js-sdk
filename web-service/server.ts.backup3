@@ -16,7 +16,7 @@ app.use(helmet());
 app.use(cors({
   origin: [
     'https://mylifedata-uhmf.onrender.com', // Main API
-    'https://mylifedata-web-git-main-assethouseekb-gmailcoms-projects.vercel.app', // Frontend
+    'https://mylifedata.vercel.app',        // Frontend
     'http://localhost:3000',                // Development
     'http://localhost:5173',                // Vite dev
     'http://localhost:10000'                // Local API
@@ -26,15 +26,12 @@ app.use(express.json());
 
 // Matrix Service Class
 class MyLifeDataMatrixService {
-  private isInitialized: boolean;
-  private demoMode: boolean;
-
   constructor() {
     this.isInitialized = false;
     this.demoMode = true;
   }
 
-  async initialize(): Promise<boolean> {
+  async initialize() {
     try {
       console.log('🔧 MyLifeData Matrix Service initializing...');
       
@@ -64,7 +61,7 @@ class MyLifeDataMatrixService {
     }
   }
 
-  generateDemoAnalysis(roomId?: string): any {
+  generateDemoAnalysis(roomId) {
     const baseScore = 50 + Math.random() * 40; // 50-90 range
     
     return {
@@ -91,7 +88,7 @@ class MyLifeDataMatrixService {
     };
   }
 
-  async analyzeRoomCommunication(roomId: string): Promise<any> {
+  async analyzeRoomCommunication(roomId) {
     if (this.demoMode) {
       console.log(`📊 Analyzing room ${roomId} in demo mode`);
       return this.generateDemoAnalysis(roomId);
@@ -99,7 +96,7 @@ class MyLifeDataMatrixService {
     throw new Error('Live Matrix analysis not yet implemented');
   }
 
-  getConnectionStatus(): any {
+  getConnectionStatus() {
     return {
       connected: this.isInitialized,
       mode: this.demoMode ? 'demo' : 'live',
@@ -113,7 +110,7 @@ class MyLifeDataMatrixService {
 const matrixService = new MyLifeDataMatrixService();
 
 // Helper functions
-function generateSwissRecommendations(sentiment: number, responseTime: number, totalMessages: number): string[] {
+function generateSwissRecommendations(sentiment, responseTime, totalMessages) {
   const recommendations = [];
   
   if (responseTime > 8) {
@@ -134,7 +131,7 @@ function generateSwissRecommendations(sentiment: number, responseTime: number, t
   return recommendations;
 }
 
-function calculateProfessionalismScore(sentiment: number, responseTime: number): number {
+function calculateProfessionalismScore(sentiment, responseTime) {
   const punctualityScore = Math.max(0, 100 - (responseTime * 8));
   const communicationScore = sentiment;
   return Math.round((punctualityScore + communicationScore) / 2);
