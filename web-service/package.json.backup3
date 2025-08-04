@@ -4,10 +4,11 @@
   "description": "MyLifeData Matrix Communication Intelligence Web Service",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc",
+    "build": "npm install --include=dev && tsc",
     "start": "node dist/server.js",
     "dev": "ts-node server.ts",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "postinstall": "npm run build"
   },
   "dependencies": {
     "express": "^4.18.2",
